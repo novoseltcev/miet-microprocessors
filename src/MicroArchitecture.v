@@ -1,24 +1,22 @@
 module MicroArchitecture (
-    input  clk, reset,
-    input  [31:0] IN,
-    output reg [31:0] OUT
+  input  clk, reset,
+  input  [31:0] IN,
+  output reg [31:0] OUT
 );
-
 
   reg  [7:0] PC = 8'b0;
   wire [31:0] Instr;
   
-  
   wire 	    B;
   wire      C;
   wire [1:0] WS;
-  wire [4:0] ALU_op;
+  wire [4:0] OPERATION;
   wire [4:0] A1;
   wire [4:0] A2;
   wire [7:0] CONST;
   wire [4:0] WA;
 
-  assign {B, C, WS, ALU_op, A1, A2, CONST, WA} = Instr;
+  assign {B, C, WS, OPERATION, A1, A2, CONST, WA} = Instr;
   wire WE3 = WS[0] | WS[1];
 
   reg  [31:0] WD3;
@@ -26,32 +24,28 @@ module MicroArchitecture (
 
   wire [31:0] RD1;                       
   wire [31:0] RD2;
-  wire [31:0] ALU_result;
-  wire 	      ALU_flag;
+  wire [31:0] ALU_Result;
+  wire	      Comparator;
   
   assign OUT = RD1;
   
   reg [31:0] SE;
-  assign SE = {9'b0, ALU_op, A1, A2, CONST};
+  assign SE = {{9{OPERATION[4]}}, OPERATION, A1, A2, CONST};
    
   always @(*) begin
     if(WE3)
-		case(WS)
-            2'b01 : WD3 <= IN;
-	    	2'b10 : WD3 <= SE; 
-	    	2'b11 : WD3 <= ALU_result;
-		endcase
+      case(WS)
+        2'd1 : WD3 <= IN;
+  	2'd2 : WD3 <= SE; 
+ 	2'd3 : WD3 <= ALU_Result;
+      endcase
   end
   
   always @(posedge clk) begin
     if (reset == 1)
-      PC <= 8'h0;
-    else begin
-      if ((ALU_flag & C) | B) 
-        PC <= PC + CONST;
-      else 
-        PC <= PC + 8'b1;
-    end
+      PC <= 0;
+    else
+      PC <= PC + ( (Comparator & C | B) ? $signed(CONST) : 1);
   end
  
     DataMemory DM_connection(
@@ -59,28 +53,27 @@ module MicroArchitecture (
     .data(Instr)
   );
 
-  
   RegFile RF_connection(
-	.clk(clk),
+    .clk(clk),
 	
-    .address_1(A1),
-    .readData_1(RD1),
+    .Address_1(A1),
+    .ReadData_1(RD1),
     
-    .address_2(A2),
-    .readData_2(RD2),
+    .Address_2(A2),
+    .ReadData_2(RD2),
     
-    .writeEnable_3(WE3),
-    .address_3(WA),
-    .writeData_3(WD3)
+    .WriteEnable_3(WE3),
+    .Address_3(WA),
+    .WriteData_3(WD3)
   );
 
 
   ALU_RiscV ALU_connection(
-	.operand_A(RD1),
-	.operand_B(RD2),
-    .operation(ALU_op),
-    .result(ALU_result),
-    .flag(ALU_flag)
+    .A(RD1),
+    .B(RD2),
+    .Operation(OPERATION),
+    .Result(ALU_Result),
+    .Flag(Comparator)
   );
 
 endmodule

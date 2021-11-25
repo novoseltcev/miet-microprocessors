@@ -1,18 +1,18 @@
 module RegFile (
-    input clk,
-  	input [4:0] address_1, address_2, address_3,
-    input 	     writeEnable_3,
-    input [31:0] writeData_3,
-  	output reg [31:0] readData_1, readData_2
+  input clk,
+  input [4:0] Address_1, Address_2, Address_3,
+  input  	    WriteEnable_3,
+  input	     [31:0] WriteData_3,
+  output reg [31:0] ReadData_1, ReadData_2
 );
 
   reg [31:0] RAM [0:31];
   
-  assign readData_1 = (address_1 == 0) ? 32'b0 : RAM[address_1];
-  assign readData_2 = (address_2 == 0) ? 32'b0 : RAM[address_2];
+  assign ReadData_1 = (Address_1 == 0) ? 32'b0 : RAM[Address_1];
+  assign ReadData_2 = (Address_2 == 0) ? 32'b0 : RAM[Address_2];
   
   always @(posedge clk)
-    if (writeEnable_3) 
-      RAM[address_3] <= writeData_3;
+    if (WriteEnable_3) 
+      RAM[Address_3] <= WriteData_3;
 
 endmodule

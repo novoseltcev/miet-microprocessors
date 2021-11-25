@@ -31,24 +31,22 @@ module tb_microarch();
         else begin
           case (tb_microarch.archx32.WS)
             2'b00 : $display("CALCULATE: %5b(x%d = %2d, x%d = %2d) = %2d",
-                             tb_microarch.archx32.ALU_op, 
+                             tb_microarch.archx32.OPERATION, 
                              tb_microarch.archx32.A1, tb_microarch.archx32.RD1,
                              tb_microarch.archx32.A2, tb_microarch.archx32.RD2,
-                             tb_microarch.archx32.ALU_result
+                             tb_microarch.archx32.ALU_Result
                             );
 
-            2'b01 : $display("SAVE FROM IO: %2d as x%1d = %2d", 
-                             tb_microarch.archx32.IN, 
+            2'b01 : $display("SAVE FROM IO: x%1d = %2d",
                              tb_microarch.archx32.WA, tb_microarch.archx32.WD3
                             );
 
-            2'b10 : $display("SAVE CONST: %2d as x%1d = %2d", 
-                             tb_microarch.archx32.SE,
+            2'b10 : $display("SAVE CONST: x%1d = %2d",
                              tb_microarch.archx32.WA, tb_microarch.archx32.WD3
                             );
 
             2'b11 : $display("SAVE RESULT: x%d = %5b(x%d as %2d, x%d as %2d) = %2d", 
-                             tb_microarch.archx32.WA, tb_microarch.archx32.ALU_op, 
+                             tb_microarch.archx32.WA, tb_microarch.archx32.OPERATION, 
                              tb_microarch.archx32.A1, tb_microarch.archx32.RD1,
                              tb_microarch.archx32.A2, tb_microarch.archx32.RD2,
                              tb_microarch.archx32.WD3
