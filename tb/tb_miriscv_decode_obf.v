@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-`include "miriscv_defines.v"
+`include "defines.v"
 
 
 module tb_miriscv_decode_obf();
@@ -191,8 +191,8 @@ module tb_miriscv_decode_obf();
         endcase
       end
 
-      `MISC_MEM_OPCODE,
-      `SYSTEM_OPCODE: begin
+      `OPCODE_MISC_MEM,
+      `OPCODE_SYSTEM: begin
         copyOperation = operation;
       end
 
@@ -250,36 +250,36 @@ module tb_miriscv_decode_obf();
     @(instruction);
     #1;
     if (comp(illegalFlag, copyIllegalFlag))
-      $display("Output 'illegal_flag' is incorrect, instruction: %x, time: %t", instruction, $time);
+      $display ("Time: %t | Instruction: %b :: 'illegal_flag' is incorrect (Actual=%b, Expected=%b)", $time, instruction, illegalFlag, copyIllegalFlag);
     if (~illegalFlag) begin
       if (comp(typeA, copyTypeA))
-        $display ("Output 'operand_A_type' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'operand_A_type' is incorrect (Actual=%b, Expected=%b)", $time, instruction, typeA, copyTypeA);  
       if (comp(typeB, copyTypeB))
-        $display ("Output 'operand_B_type' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'operand_A_type' is incorrect (Actual=%b, Expected=%b)", $time, instruction, typeB, copyTypeB);
       if (comp(operation, copyOperation))
-        $display ("Output 'alu_operation' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'alu_operation' is incorrect (Actual=%b, Expected=%b)", $time, instruction, operation, copyOperation);
       if (comp(memoryWriteEnable, copyMemoryWriteEnable))
-        $display ("Output 'memory_write_enable' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'memory_write_enable' is incorrect (Actual=%b, Expected=%b)", $time, instruction, memoryWriteEnable, copyMemoryWriteEnable);
       if (comp(memorySize, copyMemorySize))
-        $display ("Output 'memory_size' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'memory_size' is incorrect (Actual=%b, Expected=%b)", $time, instruction, memorySize, copyMemorySize);
       if (comp(memoryRequired, copyMemoryRequired))
-        $display ("Output 'memory_require' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'memory_require' is incorrect (Actual=%b, Expected=%b)", $time, instruction, memoryRequired, copyMemoryRequired);
       if (comp(regFileDataType, copyRFDataType))
-        $display ("Output 'reg_file_write_data_type' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'reg_file_write_data_type' is incorrect (Actual=%b, Expected=%b)", $time, instruction, regFileDataType, copyRFDataType);
       if (comp(regFileWriteEnable, copyRFWE))
-        $display ("Output 'reg_file_write_enable' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'reg_file_write_enable' is incorrect (Actual=%b, Expected=%b)", $time, instruction, regFileWriteEnable, copyRFWE);
       if (comp(branchFlag, copyBranchFlag))
-        $display ("Output 'branch_flag' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'branch_flag' is incorrect (Actual=%b, Expected=%b)", $time, instruction, branchFlag, copyBranchFlag);
       if (comp(jalFlag, copyJalFlag))
-        $display ("Output 'jal_flag' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'jal_flag' is incorrect (Actual=%b, Expected=%b)", $time, instruction, jalFlag, copyJalFlag);
       if (comp(jalrFlag, copyJalrFlag))
-        $display ("Output 'jalr_flag' is incorrect, instruction: %x, time: %t", instruction, $time);
+        $display ("Time: %t | Instruction: %b :: 'jalr_flag' is incorrect (Actual=%b, Expected=%b)", $time, instruction, jalrFlag, copyJalrFlag);
     end
 
     if ((typeA != `TYPE_A_RD1) &
         (typeA != `TYPE_A_PC) &
         (typeA != `TYPE_A_ZERO)) begin
-      $display ("Output 'operand_A_type' must always have a legal value, instruction: %x, time: %t", instruction, $time);
+      $display ("Time: %t | Instruction: %b :: 'operand_A_type' must always have a legal value", $time, instruction);
       numErrors = numErrors + 1;
     end
     if ((typeB != `TYPE_B_RD2) &
@@ -287,7 +287,7 @@ module tb_miriscv_decode_obf();
         (typeB != `TYPE_B_IMM_U) &
         (typeB != `TYPE_B_IMM_S) &
         (typeB != `TYPE_B_PC_INCR)) begin
-      $display ("Output 'operand_B_type' must always have a legal value, instruction: %x, time: %t", instruction, $time);
+      $display ("Time: %t | Instruction: %b :: 'operand_B_type' must always have a legal value", $time, instruction);
       numErrors = numErrors + 1;
     end
     if ((operation != `ALU_ADD)  & (operation != `ALU_SUB) &
@@ -298,7 +298,7 @@ module tb_miriscv_decode_obf();
         (operation != `ALU_GES)  & (operation != `ALU_GEU) &
         (operation != `ALU_EQ)   & (operation != `ALU_NE)  &
         (operation != `ALU_SLTS) & (operation != `ALU_SLTU)) begin
-      $display ("Output 'alu_operation' must always have a legal value, instruction: %x, time: %t", instruction, $time);
+      $display ("Time: %t | Instruction: %b ::  'alu_operation' must always have a legal value", $time, instruction);
       numErrors = numErrors + 1;
     end
     if ((memorySize != `DATA_SIZE_BYTE) &
@@ -306,12 +306,12 @@ module tb_miriscv_decode_obf();
         (memorySize != `DATA_SIZE_WORD) &
         (memorySize != `DATA_SIZE_U_BYTE) &
         (memorySize != `DATA_SIZE_U_HALF_WORD)) begin
-      $display ("Output 'memory_size' must always have a legal value, instruction: %x, time: %t", instruction, $time);
+      $display ("Time: %t | Instruction: %b :: 'memory_size' must always have a legal value", $time, instruction);
       numErrors = numErrors + 1;
     end
     if ((regFileDataType != `WRITEBACK_FROM_RESULT) &
         (regFileDataType != `WRITEBACK_FROM_DATA)) begin
-      $display ("Output 'reg_file_write_data_type' must always have a legal value, instruction: %x, time: %t", instruction, $time);
+      $display ("Time: %t | Instruction: %b :: 'reg_file_write_data_type' must always have a legal value", $time, instruction);
       numErrors = numErrors + 1;
     end
   end
@@ -322,7 +322,7 @@ module tb_miriscv_decode_obf();
       comp = 1'b0;
     else begin
       comp = 1'b1;
-      numErrors = numErrors + 1'b1;
+      numErrors = numErrors + 1;
     end
   endfunction
 
