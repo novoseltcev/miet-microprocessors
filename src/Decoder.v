@@ -44,7 +44,7 @@ module Decoder (
       illegal_flag <= 1;
     else begin      
       case(opcode)
-	`OPCODE_OPERATION_REG: begin  //DONE
+	`OPCODE_OPERATION_REG: begin
       reg_file_write_enable <= 1;  
 	  casez({func3, func7})
 	    {`FUNC3_ADD_SUB, `FUNC7_ADD}:  alu_operation <= `ALU_ADD;
@@ -64,7 +64,7 @@ module Decoder (
 	  endcase
 	end
 	
-	`OPCODE_OPERATION_IMM: begin  //DONE
+	`OPCODE_OPERATION_IMM: begin
 	  reg_file_write_enable <= 1;
 	  operand_B_type        <= `TYPE_B_IMM_I;
 	  casez({func3, func7})  
@@ -84,19 +84,19 @@ module Decoder (
       endcase            
   	end
 	
-	`OPCODE_IMM_U_LOAD: begin  //DONE
+	`OPCODE_IMM_U_LOAD: begin
 	  reg_file_write_enable <= 1;
 	  operand_A_type        <= `TYPE_A_ZERO;
       operand_B_type        <= `TYPE_B_IMM_U;
   	end
 	
-	`OPCODE_IMM_U_PC: begin  //DONE
+	`OPCODE_IMM_U_PC: begin
 	  reg_file_write_enable <= 1;
 	  operand_A_type        <= `TYPE_A_PC;
       operand_B_type        <= `TYPE_B_IMM_U;
 	end
 	
-	`OPCODE_STORE: begin  //DONE
+	`OPCODE_STORE: begin
 	  memory_require      <= 1;
 	  memory_write_enable <= 1;
 	  operand_B_type      <= `TYPE_B_IMM_S;
@@ -112,7 +112,7 @@ module Decoder (
 	  endcase
 	end
 	
-	`OPCODE_LOAD: begin  //DONE
+	`OPCODE_LOAD: begin
 	  reg_file_write_enable    <= 1;
       reg_file_write_data_type <= 1;
       memory_require           <= 1;
@@ -132,7 +132,7 @@ module Decoder (
        endcase
   	end
 	
-	`OPCODE_BRANCH: begin  //DONE
+	`OPCODE_BRANCH: begin
 	  branch_flag <= 1;
 	  case(func3)
 	    `FUNC3_BEQ:  alu_operation <= `ALU_EQ;
@@ -148,7 +148,7 @@ module Decoder (
 	  endcase
   	end
 	
-	`OPCODE_JUMP_LINK_REG:  //DONE
+	`OPCODE_JUMP_LINK_REG:
 	  case(func3)
 	    `FUNC3_JALR: begin
 	      reg_file_write_enable <= 1;
@@ -159,7 +159,7 @@ module Decoder (
 	     default: illegal_flag <= 1;
        endcase
 	
-	`OPCODE_JUMP_LINK_IMM: begin  //DONE
+	`OPCODE_JUMP_LINK_IMM: begin
 	  reg_file_write_enable <= 1;
 	  jal_flag		        <= 1;
 	  operand_A_type        <= `TYPE_A_PC;
