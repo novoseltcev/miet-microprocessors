@@ -6,9 +6,11 @@
 `include "Decoder.v";
 
 
-module MicroArchitecture (
-  input  clk, reset,
+module CoreRiscV (
+  input  clk, 
 );
+  
+  // DECODE
   wire [31:0] instr;
 
   wire [1: 0] opcode_type
@@ -27,98 +29,16 @@ module MicroArchitecture (
   assign imm_S = {{20{instr[31]}}, instr[31: 25], instr[11: 7]};
   assign imm_B = {{20{instr[31]}}, instr[7], instr[30: 25], instr[11: 8], 0};
   assign imm_J = {{12{instr[31]}}, instr[19: 12], instr[20], instr[30: 21], 0};
-
- 
+  // END DECODE
+  
+  
+  // GENERATE CONTROL SIGNALS
   wire memory_require_signal, memory_write_enable_signal;
   wire reg_file_write_enable_signal, reg_file_write_data_type_signal;
   wire branch_signal, jal_signal, jalr_signal, update_pc_signal;
   wire [2: 0] operand_A_type_signal, memeory_size_signal;
   wire [1: 0] operand_B_type_signal;
   wire [`ALU_OP_WIDTH - 1: 0] alu_operation_signal;
-
-  reg  [31:0] wd3, operand_A, operand_B;
-  wire [31:0] rd1, rd2, alu_result, readed_data;
-  wire comparator; 
-
-
-  reg [31: 0] pc = 32'b0; 
-  reg [31: 0] pc_increment;
-
-  always @(*) begin
-    casez({jal_signal | branch & comparator, branch})
-      {0, 1'b?}: pc_increment <= 3'd4;
-      {1, 0}:    pc_increment <= imm_J;
-      {1, 0}:    pc_increment <= imm_B;
-    endcase
-    pre_pc <= ( (jalr_signal) ? rd1 : pc + pc_increment  );
-  end
-
-  always @(posedge clk)
-    if (update_pc_signal)
-      pc <= pre_pc;
-
-  InstrMemory IM_connection(
-    .address(pc),
-    .read_data(instr);
-  );
-	
-
-  RegFile RF_connection(
-    .clk(clk),
-
-    .address_1(rs1),
-    .read_data_1(rd1),
-
-    .address_2(rs2),
-    .read_data_2(rd2),
-
-    .address_3(rd3),
-    .write_data_3(wd3),
-    .write_enable_3(reg_file_write_enable_signal)
-  );
-
-
-  always @(*) begin
-    case(operand_A_type_signal)
-      `TYPE_A_RD1:  operand_A <= rd1;
-      `TYPE_A_PC:   operand_A <= pc;
-      `TYPE_A_ZERO: operand_A <= 0;
-    endcase
-    case(operand_B_type_signal)
-      `TYPE_B_RD2:     operand_B <= rd2;
-      `TYPE_B_IMM_I:   operand_B <= imm_I;
-      `TYPE_B_IMM_U:   operand_B <= imm_U;
-      `TYPE_B_IMM_S:   operand_B <= imm_S;
-      `TYPE_B_PC_INCR: operand_B <= 4;
-    endcase
-  end
-
-
-  ALU_riscV ALU_connection(
-    .A(operand_A),
-    .B(operand_B),
-    .operation(alu_operation_signal),
-    
-    .result(alu_result),
-    .flag(comparator)
-  );
-  
-  
-  DataMemory DM_connection(
-    .clk(clk),
-
-    .address(alu_result),
-    .write_data(rd2),
-    .write_enable(memory_write_enable_signal),
-    .access(memory_require),
-    .size(memory_size_signal),
-
-    .read_data(readed_data)
-  );
-
-  always @(*)
-    wd3 <= ((reg_file_write_data_type_signal) ? readed_data : alu_result);
-  
   
   Decoder Decoder_connection(
     .opcode_type(opcode_type),
@@ -142,5 +62,97 @@ module MicroArchitecture (
     .jalr_flag(jalr_signal),
     .stop_signal(not(update_pc_signal))
   );
+  // END GENERATE CONTROL SIGNALS
+
+   
+
+
+  // FETCH INSTRUCTRION
+  reg [31: 0] pc = 32'b0; 
+  reg [31: 0] pc_increment;
+  wire comparator;
+
+  always @(*) begin
+    casez({jal_signal | branch & comparator, branch})
+      {0, 1'b?}: pc_increment <= 3'd4;
+      {1, 0}:    pc_increment <= imm_J;
+      {1, 0}:    pc_increment <= imm_B;
+    endcase
+    pre_pc <= ( (jalr_signal) ? rd1 : pc + pc_increment  );
+  end
+
+  always @(posedge clk)
+    if (update_pc_signal)
+      pc <= pre_pc;
   
+  InstrMemory IM_connection(
+    .address(pc),
+    .read_data(instr);
+  );
+  // END FETCH INSTRUCTRION
+  
+  
+  // EXECUTE
+  reg  [31:0] wd3, operand_A, operand_B;
+  wire [31:0] rd1, rd2, alu_result, readed_data;
+  
+  RegFile RF_connection(
+    .clk(clk),
+
+    .address_1(rs1),
+    .read_data_1(rd1),
+
+    .address_2(rs2),
+    .read_data_2(rd2),
+
+    .address_3(rd3),
+    .write_data_3(wd3),
+    .write_enable_3(reg_file_write_enable_signal)
+  );
+  
+  always @(*) begin
+    case(operand_A_type_signal)
+      `TYPE_A_RD1:  operand_A <= rd1;
+      `TYPE_A_PC:   operand_A <= pc;
+      `TYPE_A_ZERO: operand_A <= 0;
+    endcase
+    case(operand_B_type_signal)
+      `TYPE_B_RD2:     operand_B <= rd2;
+      `TYPE_B_IMM_I:   operand_B <= imm_I;
+      `TYPE_B_IMM_U:   operand_B <= imm_U;
+      `TYPE_B_IMM_S:   operand_B <= imm_S;
+      `TYPE_B_PC_INCR: operand_B <= 4;
+    endcase
+  end
+  
+
+
+  ALU_riscV ALU_connection(
+    .A(operand_A),
+    .B(operand_B),
+    .operation(alu_operation_signal),
+    
+    .result(alu_result),
+    .flag(comparator)
+  );
+  // END EXECUTE
+  
+  // MEMORY
+  DataMemory DM_connection(
+    .clk(clk),
+
+    .address(alu_result),
+    .write_data(rd2),
+    .write_enable(memory_write_enable_signal),
+    .access(memory_require),
+    .size(memory_size_signal),
+
+    .read_data(readed_data)
+  );
+  // END MEMORY
+  
+  // WRITEBACK
+  always @(*)
+    wd3 <= ((reg_file_write_data_type_signal) ? readed_data : alu_result);
+  // END WRITEBACK
 endmodule
