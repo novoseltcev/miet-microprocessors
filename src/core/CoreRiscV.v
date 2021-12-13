@@ -1,43 +1,41 @@
-`include "defines.v";
-`include "ALU_RiscV.v";
-`include "RegFile.v";
-`include "InstrMemory.v";
-`include "DataMemory.v";
-`include "Decoder.v";
-
+`include "defines.v"
+`include "ALU_RiscV.v"
+`include "RegFile.v"
+`include "InstrMemory.v"
+`include "DataMemory.v"
+`include "Decoder.v"
 
 module CoreRiscV (
-  input  clk, 
+  input  clk
 );
   
   // DECODE
-  wire [31:0] instr;
-
-  wire [1: 0] opcode_type
+  reg [31: 0] pc = 32'b0; 
+  reg [31:0] instr;
+  
+  wire [1: 0] opcode_type;
   wire [4: 0] opcode;
   wire [2: 0] func3;
   wire [4: 0] rs1, rs2, rd3;
   wire [6: 0] func7;
 
-  wire [11: 0] imm_I, imm_S, imm_B;
-  wire [20: 0] imm_J;
-  wire [19: 0] imm_U;
-
   assign {func7, rs2, rs1, func3, rd3, opcode, opcode_type} = instr; 
-  assign imm_I = {{20{instr[31]}}, instr[31: 20]};
-  assign imm_U = {  instr[31: 12], {12{0}}};
-  assign imm_S = {{20{instr[31]}}, instr[31: 25], instr[11: 7]};
-  assign imm_B = {{20{instr[31]}}, instr[7], instr[30: 25], instr[11: 8], 0};
-  assign imm_J = {{12{instr[31]}}, instr[19: 12], instr[20], instr[30: 21], 0};
+  
+  wire [31: 0] imm_I = {{20{instr[31]}}, instr[31: 20]};
+  wire [31: 0] imm_S = {{20{instr[31]}}, instr[31: 25], instr[11: 7]};
+  wire [31: 0] imm_U = {  instr[31: 12], 12'b0};
+  wire [31: 0] imm_B = {{20{instr[31]}}, instr[7], instr[30: 25], instr[11: 8], 1'b0};
+  wire [31: 0] imm_J = {{12{instr[31]}}, instr[19: 12], instr[20], instr[30: 21], 1'b0};
   // END DECODE
   
   
   // GENERATE CONTROL SIGNALS
   wire memory_require_signal, memory_write_enable_signal;
   wire reg_file_write_enable_signal, reg_file_write_data_type_signal;
-  wire branch_signal, jal_signal, jalr_signal, update_pc_signal;
-  wire [2: 0] operand_A_type_signal, memeory_size_signal;
-  wire [1: 0] operand_B_type_signal;
+  wire branch_signal, jal_signal, jalr_signal; 
+  wire inverse_update_pc_signal, illegal_signal;
+  wire [1: 0] operand_A_type_signal;
+  wire [2: 0] operand_B_type_signal, memory_size_signal;
   wire [`ALU_OP_WIDTH - 1: 0] alu_operation_signal;
   
   Decoder Decoder_connection(
@@ -54,48 +52,24 @@ module CoreRiscV (
     .memory_write_enable(memory_write_enable_signal),
     .memory_size(memory_size_signal),
 
-    .reg_file_write_enable(reg_file_write_enabler_signal),
+    .reg_file_write_enable(reg_file_write_enable_signal),
     .reg_file_write_data_type(reg_file_write_data_type_signal),
 
     .branch_flag(branch_signal),
     .jal_flag(jal_signal),
     .jalr_flag(jalr_signal),
-    .stop_signal(not(update_pc_signal))
+    .stop_signal(inverse_update_pc_signal),
+    .illegal_flag(illegal_signal)
   );
   // END GENERATE CONTROL SIGNALS
 
-   
-
-
-  // FETCH INSTRUCTRION
-  reg [31: 0] pc = 32'b0; 
-  reg [31: 0] pc_increment;
-  wire comparator;
-
-  always @(*) begin
-    casez({jal_signal | branch & comparator, branch})
-      {0, 1'b?}: pc_increment <= 3'd4;
-      {1, 0}:    pc_increment <= imm_J;
-      {1, 0}:    pc_increment <= imm_B;
-    endcase
-    pre_pc <= ( (jalr_signal) ? rd1 : pc + pc_increment  );
-  end
-
-  always @(posedge clk)
-    if (update_pc_signal)
-      pc <= pre_pc;
-  
-  InstrMemory IM_connection(
-    .address(pc),
-    .read_data(instr);
-  );
-  // END FETCH INSTRUCTRION
-  
   
   // EXECUTE
-  reg  [31:0] wd3, operand_A, operand_B;
-  wire [31:0] rd1, rd2, alu_result, readed_data;
-  
+  wire [31: 0] rd1, rd2; 
+  reg  [31: 0] wd3, operand_A, operand_B;
+  wire [31: 0] alu_result, readed_data;
+  wire comparator;
+ 
   RegFile RF_connection(
     .clk(clk),
 
@@ -125,9 +99,7 @@ module CoreRiscV (
     endcase
   end
   
-
-
-  ALU_riscV ALU_connection(
+  ALU_RiscV ALU_connection(
     .A(operand_A),
     .B(operand_B),
     .operation(alu_operation_signal),
@@ -135,8 +107,31 @@ module CoreRiscV (
     .result(alu_result),
     .flag(comparator)
   );
-  // END EXECUTE
+  // END EXECUTE 
   
+  
+  // FETCH INSTRUCTRION
+  reg [31: 0] pc_increment, pre_pc;
+  always @(*) begin
+    casez({jal_signal | branch_signal & comparator, branch_signal})
+      {1'b0, 1'b?}: pc_increment <= 3'd4;
+      {1'b1, 1'b0}: pc_increment <= imm_J;
+      {1'b1, 1'b0}: pc_increment <= imm_B;
+    endcase
+    pre_pc <= ( (jalr_signal) ? rd1 : pc + pc_increment  );
+  end
+
+  always @(posedge clk)
+    if (!inverse_update_pc_signal)
+      pc <= pre_pc;
+  
+  InstrMemory IM_connection(
+    .address(pc),
+    .data(instr)
+  );
+  // END FETCH INSTRUCTRION
+  
+
   // MEMORY
   DataMemory DM_connection(
     .clk(clk),
@@ -144,13 +139,14 @@ module CoreRiscV (
     .address(alu_result),
     .write_data(rd2),
     .write_enable(memory_write_enable_signal),
-    .access(memory_require),
+    .access(memory_require_signal),
     .size(memory_size_signal),
 
     .read_data(readed_data)
   );
   // END MEMORY
   
+
   // WRITEBACK
   always @(*)
     wd3 <= ((reg_file_write_data_type_signal) ? readed_data : alu_result);
