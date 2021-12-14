@@ -6,12 +6,15 @@
 `include "Decoder.v"
 
 module CoreRiscV (
-  input  clk
+  input  clk,
+  input reset,
+
+  input [31: 0] instr,
+  output reg [31: 0] pc
 );
   
   // DECODE
-  reg [31: 0] pc = 32'b0; 
-  reg [31:0] instr;
+  assign pc = 32'b0; 
   
   wire [1: 0] opcode_type;
   wire [4: 0] opcode;
@@ -124,11 +127,6 @@ module CoreRiscV (
   always @(posedge clk)
     if (!inverse_update_pc_signal)
       pc <= pre_pc;
-  
-  InstrMemory IM_connection(
-    .address(pc),
-    .data(instr)
-  );
   // END FETCH INSTRUCTRION
   
 
