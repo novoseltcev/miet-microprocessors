@@ -1,16 +1,23 @@
 `include "defines.v"
 `include "ALU_RiscV.v"
 `include "RegFile.v"
-`include "InstrMemory.v"
-`include "DataMemory.v"
 `include "Decoder.v"
+`include "LSU.v"
 
 module CoreRiscV (
   input  clk,
   input reset,
 
+  // instr interface
   input [31: 0] instr,
-  output reg [31: 0] pc
+  output reg [31: 0] pc,
+
+  // data interface
+  input      [31: 0] external_data,
+  output reg [31: 0] internal_data,
+  output reg [31: 0] external_address,
+  output reg [3:  0] memory_load_byte_map,
+  output reg  memory_require, memory_write_enable
 );
   
   // DECODE
@@ -124,23 +131,34 @@ module CoreRiscV (
     pre_pc <= ( (jalr_signal) ? rd1 + imm_I : pc + pc_increment  );
   end
 
+  wire stall_signal;
+  reg update_pc_signal = !interrupted_signal | stall_signall;
   always @(posedge clk)
-    if (!inverse_update_pc_signal)
+    if (update_pc_signal)
       pc <= pre_pc;
   // END FETCH INSTRUCTRION
   
-
   // MEMORY
-  DataMemory DM_connection(
+  LSU LSU_connection(
     .clk(clk),
+    .reset(reset),
 
-    .address(alu_result),
-    .write_data(rd2),
-    .write_enable(memory_write_enable_signal),
-    .access(memory_require_signal),
-    .size(memory_size_signal),
+    .core_address(alu_result),
+    .core_write_data(rd2),
+    .core_require(memory_require_signal),
+    .core_write_enable(memory_write_enable_signal),
+    .core_size(memory_size_signal),
 
-    .read_data(readed_data)
+    .core_read_data(readed_data),
+    .core_stall_signal(stall_signal),
+    
+    .memory_read_data(external_data),
+
+    .memory_require(memory_require),
+    .memory_write_enable(memory_write_enable),
+    .memory_bytes_enable_map(memory_load_byte_map),
+    .memory_address(external_address),
+    .memory_write_data(internal_data)
   );
   // END MEMORY
   
