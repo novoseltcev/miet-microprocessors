@@ -116,9 +116,9 @@ module CoreRiscV (
     casez({jal_signal | branch_signal & comparator, branch_signal})
       {1'b0, 1'b?}: pc_increment <= 3'd4;
       {1'b1, 1'b0}: pc_increment <= imm_J;
-      {1'b1, 1'b0}: pc_increment <= imm_B;
+      {1'b1, 1'b1}: pc_increment <= imm_B;
     endcase
-    pre_pc <= ( (jalr_signal) ? rd1 : pc + pc_increment  );
+    pre_pc <= ( (jalr_signal) ? rd1 + imm_I : pc + pc_increment  );
   end
 
   always @(posedge clk)
