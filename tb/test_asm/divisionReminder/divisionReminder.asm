@@ -1,16 +1,10 @@
 .globl: .globl __start
 
-.data 
-  divisible: .word 1024
-  divider:   .word 10
-
 .text
 __start:
   li a1 1024
   li a2 10
   call __division_reminder
-  mv t0 a0
-  xor a0 a0 a0
   ecall
   
  __division_reminder:  # division_reminder(i32 a1, i32 a2) -> a0

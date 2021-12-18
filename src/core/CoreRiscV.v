@@ -6,23 +6,26 @@
 
 module CoreRiscV (
   input  clk,
-  input reset,
+  input  reset,
 
   // instr interface
-  input [31: 0] instr,
-  output reg [31: 0] pc,
+  input logic [31: 0] instr,
+  output      [31: 0] instr_address,
 
   // data interface
-  input      [31: 0] external_data,
-  output reg [31: 0] internal_data,
-  output reg [31: 0] external_address,
-  output reg [3:  0] memory_load_byte_map,
-  output reg  memory_require, memory_write_enable
+  input logic [31: 0] external_data,
+  input logic  memory_ex_begin, memory_ex_end,
+  output      [31: 0] internal_data,
+  output      [31: 0] external_address,
+  output      [3:  0] memory_load_byte_map,
+  output       memory_require, memory_write_enable
 );
   
-  // DECODE
-  assign pc = 32'b0; 
+    
+  reg [31: 0] pc;
+  assign instr_address = pc;
   
+  // DECODE
   wire [1: 0] opcode_type;
   wire [4: 0] opcode;
   wire [2: 0] func3;
@@ -43,7 +46,7 @@ module CoreRiscV (
   wire memory_require_signal, memory_write_enable_signal;
   wire reg_file_write_enable_signal, reg_file_write_data_type_signal;
   wire branch_signal, jal_signal, jalr_signal; 
-  wire inverse_update_pc_signal, illegal_signal;
+  wire interrupted_signal, illegal_signal;
   wire [1: 0] operand_A_type_signal;
   wire [2: 0] operand_B_type_signal, memory_size_signal;
   wire [`ALU_OP_WIDTH - 1: 0] alu_operation_signal;
@@ -68,7 +71,7 @@ module CoreRiscV (
     .branch_flag(branch_signal),
     .jal_flag(jal_signal),
     .jalr_flag(jalr_signal),
-    .stop_signal(inverse_update_pc_signal),
+    .stop_signal(interrupted_signal),
     .illegal_flag(illegal_signal)
   );
   // END GENERATE CONTROL SIGNALS
@@ -122,6 +125,7 @@ module CoreRiscV (
   
   // FETCH INSTRUCTRION
   reg [31: 0] pc_increment, pre_pc;
+    
   always @(*) begin
     casez({jal_signal | branch_signal & comparator, branch_signal})
       {1'b0, 1'b?}: pc_increment <= 3'd4;
@@ -129,13 +133,21 @@ module CoreRiscV (
       {1'b1, 1'b1}: pc_increment <= imm_B;
     endcase
     pre_pc <= ( (jalr_signal) ? rd1 + imm_I : pc + pc_increment  );
+    //instr_address <= pc;
   end
 
   wire stall_signal;
-  reg update_pc_signal = !interrupted_signal | stall_signall;
-  always @(posedge clk)
-    if (update_pc_signal)
-      pc <= pre_pc;
+  always @(posedge clk) begin
+    if (reset) begin
+      pc <= `RESET_ADDR;
+    end else 
+      if (!stall_signal)
+        pc <= pre_pc;
+      else
+        $display("interrupted");
+    //instr_address <= pc;
+    //;
+  end
   // END FETCH INSTRUCTRION
   
   // MEMORY
@@ -153,10 +165,12 @@ module CoreRiscV (
     .core_stall_signal(stall_signal),
     
     .memory_read_data(external_data),
+    .memory_begin_signal(memory_ex_begin),
+    .memory_end_signal(memory_ex_end),
 
     .memory_require(memory_require),
     .memory_write_enable(memory_write_enable),
-    .memory_bytes_enable_map(memory_load_byte_map),
+    .memory_byte_enable_map(memory_load_byte_map),
     .memory_address(external_address),
     .memory_write_data(internal_data)
   );
