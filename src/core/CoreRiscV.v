@@ -14,7 +14,6 @@ module CoreRiscV (
 
   // data interface
   input logic [31: 0] external_data,
-  input logic  memory_ex_begin, memory_ex_end,
   output      [31: 0] internal_data,
   output      [31: 0] external_address,
   output      [3:  0] memory_load_byte_map,
@@ -136,12 +135,12 @@ module CoreRiscV (
     //instr_address <= pc;
   end
 
-  wire stall_signal;
+  wire en_pc;
   always @(posedge clk) begin
     if (reset) begin
       pc <= `RESET_ADDR;
     end else 
-      if (!stall_signal)
+      if (!en_pc)
         pc <= pre_pc;
       else
         $display("interrupted");
@@ -154,7 +153,7 @@ module CoreRiscV (
   LSU LSU_connection(
     .clk(clk),
     .reset(reset),
-
+    
     .core_address(alu_result),
     .core_write_data(rd2),
     .core_require(memory_require_signal),
@@ -162,12 +161,12 @@ module CoreRiscV (
     .core_size(memory_size_signal),
 
     .core_read_data(readed_data),
-    .core_stall_signal(stall_signal),
+    .core_stall_signal(en_pc),
     
     .memory_read_data(external_data),
-    .memory_begin_signal(memory_ex_begin),
-    .memory_end_signal(memory_ex_end),
-
+    
+    .memory_begin_signal(data_gnt_i),
+    .memory_end_signal(data_rvalid_i),
     .memory_require(memory_require),
     .memory_write_enable(memory_write_enable),
     .memory_byte_enable_map(memory_load_byte_map),

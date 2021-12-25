@@ -1,5 +1,5 @@
 `include "core/CoreRiscV.v"
-`include "core/RAM_RiscV.v"
+`include "devices/RAM_RiscV.v"
 
 module top_RiscV
 #(
@@ -22,8 +22,6 @@ module top_RiscV
   logic  [31:0]  core_data_write;
 
   logic  [31:0]  ram_data_read;
-  logic          ram_data_begin;
-  logic          ram_data_end;
   
   logic          ram_data_require;
   logic          ram_data_write_enable;
@@ -49,8 +47,6 @@ module top_RiscV
     .instr         ( core_instr_data    ),
 
     .external_data        ( core_data_read            ),
-    .memory_ex_begin      ( ram_data_begin			  ),
-    .memory_ex_end		  ( ram_data_end			  ),
     
     .memory_require       ( core_data_require         ),
     .memory_write_enable  ( core_data_write_enable    ),
@@ -71,8 +67,6 @@ module top_RiscV
     .instr_address ( core_instr_address ),
 
     .data_read            ( ram_data_read            ),
-    .data_begin           ( ram_data_begin           ),
-    .data_end             ( ram_data_end             ),
     
     .data_require         ( ram_data_require         ),
     .data_write_enable    ( ram_data_write_enable    ),

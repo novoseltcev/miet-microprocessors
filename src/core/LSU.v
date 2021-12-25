@@ -18,7 +18,7 @@ module LSU(
   output reg [31: 0] memory_address, memory_write_data
 );
   
-  always @(*) begin
+  always @(*)
     if (reset) begin
       core_read_data       <= 32'b0;
       memory_write_data    <= 32'b0;
@@ -26,13 +26,11 @@ module LSU(
       memory_byte_enable_map  <= 4'b0;
       memory_require       	  <= 1'b0;
       memory_write_enable     <= 1'b0;
-      core_stall_signal       <= 1'b0;
+      //core_stall_signal       <= 1'b0;
     end else begin
-      core_stall_signal <= memory_begin_signal | !memory_end_signal & core_stall_signal;
       memory_address <= core_address;
       memory_write_enable <= core_write_enable;
-      if (!core_stall_signal & core_require) begin
-        //core_stall_signal <= 1'b1;
+      if (core_require) begin
         memory_require <= 1'b1;
         if (core_write_enable) begin
           case(core_size)
@@ -71,9 +69,13 @@ module LSU(
 
             {`DATA_SIZE_WORD, 2'b??}: core_read_data <= memory_read_data;   
           endcase
-      end else begin
-        memory_require <= 1'b0;
-      end
+      end //core_req
     end
-  end
+    
+  reg working;
+  always@(posedge clk)
+    working = ~core_stall_signal;
+    
+  assign core_stall_signal = working && core_require;
+    
 endmodule
