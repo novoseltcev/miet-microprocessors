@@ -1,7 +1,7 @@
 `include "defines.v"
 
 
-module ALU_RiscV (
+module ALU (
   input  [31:0]     A, B,
   input  [4: 0]     operation,
   output reg[31: 0] result,

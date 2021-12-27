@@ -1,7 +1,7 @@
-`include "core/CoreRiscV.v"
-`include "devices/RAM_RiscV.v"
+`include "core/Core.v"
+`include "controller/RAM.v"
 
-module top_RiscV
+module motherboard
 #(
   parameter RAM_SIZE      = 256, // bytes
   parameter RAM_INIT_FILE = ""
@@ -39,7 +39,7 @@ module top_RiscV
   assign ram_data_address         = core_data_address;
   assign ram_data_write           = core_data_write;
 
-  CoreRiscV core (
+  Core core (
     .clk   ( clk   ),
     .reset ( !reset ),
 
@@ -55,7 +55,7 @@ module top_RiscV
     .internal_data        ( core_data_write           )
   );
   
-  RAM_RiscV
+  RAM
   #(
     .SIZE      (RAM_SIZE),
     .INIT_FILE (RAM_INIT_FILE)

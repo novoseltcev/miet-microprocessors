@@ -1,10 +1,10 @@
 `include "defines.v"
-`include "ALU_RiscV.v"
+`include "ALU.v"
 `include "RegFile.v"
 `include "Decoder.v"
 `include "LSU.v"
 
-module CoreRiscV (
+module Core (
   input  clk,
   input  reset,
 
@@ -111,7 +111,7 @@ module CoreRiscV (
     endcase
   end
   
-  ALU_RiscV ALU_connection(
+  ALU ALU_connection(
     .A(operand_A),
     .B(operand_B),
     .operation(alu_operation_signal),
