@@ -1,4 +1,4 @@
-module RAM_RiscV
+module RAM
 #(
   parameter SIZE      = 256, // bytes
   parameter INIT_FILE = ""
@@ -9,16 +9,16 @@ module RAM_RiscV
   input reset,
 
   // instruction memory interface
-  output logic  [31:0]  instr_data,
+  output logic  [31:0]  instruction,
   input         [31:0]  instr_address,
 
   // data memory interface
-  output logic  [31: 0]  data_read,
+  output logic  [31: 0]  data,
   input                  data_require,
   input                  data_write_enable,
-  input         [3:  0]  data_byte_enable_map,
+  input         [3:  0]  data_byte_enable,
   input         [31: 0]  data_address,
-  input         [31: 0]  data_write
+  input         [31: 0]  write_data
 );
 
   reg [31: 0] memory [0: SIZE / 4 - 1];
@@ -33,27 +33,27 @@ module RAM_RiscV
         memory[ram_index] = {32{1'b0}};
   end
   
-  assign instr_data = memory[(instr_address >> 2) % SIZE];
-  
-  reg[2: 0] work_stage = 3'd1;
+  assign instruction = memory[(instr_address >> 2) % SIZE];
+ 
   always @(posedge clk)
     if(!reset)
-      data_read  <= 32'b0;
+      data  <= 32'b0;
     else
       if(data_require)
         if(!data_write_enable)
-          data_read <= memory[(data_address >> 2) % SIZE];
+          data <= memory[(data_address >> 2) % SIZE];
         else begin
-          if(data_byte_enable_map[0])
-            memory[data_address[31:2]][7:0]  <= data_write[7:0];
+          if(data_byte_enable[0])
+            memory[data_address[31:2]][7:0]  <= write_data[7:0];
 	  
-          if(data_byte_enable_map[1])
-	    memory[data_address[31:2]][15:8] <= data_write[15:8];
+          if(data_byte_enable[1])
+	    memory[data_address[31:2]][15:8] <= write_data[15:8];
 
-	  if(data_byte_enable_map[2])
-	    memory[data_address[31:2]][23:16] <= data_write[23:16];
+	  if(data_byte_enable[2])
+	    memory[data_address[31:2]][23:16] <= write_data[23:16];
 
-	  if(data_byte_enable_map[3])
-	    memory[data_address[31:2]][31:24] <= data_write[31:24];
+	  if(data_byte_enable[3])
+	    memory[data_address[31:2]][31:24] <= write_data[31:24];
         end
 endmodule
+

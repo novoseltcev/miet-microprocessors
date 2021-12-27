@@ -20,8 +20,8 @@ module ALU (
       `ALU_SRL : result = A >> B;
       `ALU_SLL : result = A << B;
       
-      `ALU_SLTS: result = $signed(A)  $signed(B);
-      `ALU_SLTU: result = A  B;
+      `ALU_SLTS: result = $signed(A) < $signed(B);
+      `ALU_SLTU: result = A < B;
 
       `ALU_LTS : result = $signed(A) < $signed(B);
       `ALU_LTU : result = A < B;

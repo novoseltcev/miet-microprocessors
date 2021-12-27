@@ -6,7 +6,7 @@
 
 module Core (
   input  clk,
-  input  reset,
+  input  areset,
 
   // instr interface
   input logic [31: 0] instr,
@@ -137,7 +137,7 @@ module Core (
 
   wire en_pc;
   always @(posedge clk) begin
-    if (reset) begin
+    if (areset) begin
       pc <= `RESET_ADDR;
     end else 
       if (!en_pc)
@@ -152,7 +152,7 @@ module Core (
   // MEMORY
   LSU LSU_connection(
     .clk(clk),
-    .reset(reset),
+    .areset(areset),
     
     .core_address(alu_result),
     .core_write_data(rd2),
@@ -181,3 +181,4 @@ module Core (
     wd3 <= ((reg_file_write_data_type_signal) ? readed_data : alu_result);
   // END WRITEBACK
 endmodule
+

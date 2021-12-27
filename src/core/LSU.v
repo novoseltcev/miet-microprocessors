@@ -1,7 +1,7 @@
 `include "defines.v"
 
 module LSU(
-  input clk, reset,
+  input clk, areset,
 
   // core protocol
   input      [31: 0] core_address, core_write_data,
@@ -19,7 +19,7 @@ module LSU(
 );
   
   always @(*)
-    if (reset) begin
+    if (areset) begin
       core_read_data       <= 32'b0;
       memory_write_data    <= 32'b0;
       memory_address       <= 32'b0;
